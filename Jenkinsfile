@@ -15,19 +15,6 @@ pipeline {
         sh 'rm -rf build'
       }
     }
-
-
-    stage('Documentation') {
-      when {
-        expression {
-          env.BRANCH_NAME == 'main'
-        }
-      }
-      steps {
-        // Generating docs
-        sh 'rm -rf build'
-      }
-    }
   }
 
   post {
