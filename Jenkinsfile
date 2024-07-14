@@ -44,5 +44,4 @@ pipeline {
                 echo "Goodbye from pipeline ${name}"
             }
         }
-    }
 }
