@@ -20,7 +20,7 @@ pipeline {
     stage('Documentation') {
       when {
         expression {
-          env.BRANCH_NAME == 'develop'
+          env.BRANCH_NAME == 'main'
         }
       }
       steps {
