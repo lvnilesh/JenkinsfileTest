@@ -26,8 +26,7 @@ THE SOFTWARE.
 
 pipeline {
     agent any
-    		stages {
-		      	stage('Checkout'){
+		    stage('Checkout'){
           	checkout scm
        	}
         stage("Hello") {
