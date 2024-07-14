@@ -12,7 +12,7 @@ pipeline {
 
     stage('Dependecies') {
       steps {
-        ls
+        sh 'rm -rf build'
       }
     }
 
@@ -25,7 +25,7 @@ pipeline {
       }
       steps {
         // Generating docs
-        pwd
+        sh 'rm -rf build'
       }
     }
   }
