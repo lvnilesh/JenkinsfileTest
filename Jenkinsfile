@@ -25,6 +25,7 @@ THE SOFTWARE.
 */
 
 node('node') {
+	  agent any
     currentBuild.result = "SUCCESS"
     try {
        stage('Checkout'){
