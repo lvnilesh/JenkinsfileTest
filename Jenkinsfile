@@ -24,51 +24,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-node('node') {
-	  agent any
-    currentBuild.result = "SUCCESS"
-    try {
-       stage('Checkout'){
-          checkout scm
-       }
-
-       stage('Test'){
-         env.NODE_ENV = "test"
-         print "Environment will be : ${env.NODE_ENV}"
-         sh 'node -v'
-         sh 'npm prune'
-         sh 'npm install'
-         sh 'npm test'
-       }
-
-       stage('Build Docker'){
-            sh './dockerBuild.sh'
-       }
-
-       stage('Deploy'){
-         echo 'Push to Repo'
-         sh './dockerPushToRepo.sh'
-         echo 'ssh to web server and tell it to pull new image'
-       }
-
-       stage('Cleanup'){
-         echo 'prune and cleanup'
-         sh 'npm prune'
-         sh 'rm node_modules -rf'
-         mail body: 'project build successful',
-                     from: 'xxxx@yyyyy.com',
-                     replyTo: 'xxxx@yyyy.com',
-                     subject: 'project build successful',
-                     to: 'yyyyy@yyyy.com'
-       }
-    }
-    catch (err) {
-        currentBuild.result = "FAILURE"
-            mail body: "project build error is here: ${env.BUILD_URL}" ,
-            from: 'xxxx@yyyy.com',
-            replyTo: 'yyyy@yyyy.com',
-            subject: 'project build failed',
-            to: 'zzzz@yyyyy.com'
-        throw err
+pipeline {
+    agent any
+    		stages {
+		      	stage('Checkout'){
+          	checkout scm
+       	}
+        stage("Hello") {
+            steps {
+                echo "Hello from pipeline ${name}"
+            }
+        }
+				stage('Build') {
+            steps {
+                sh 'echo "Building on DockerHost.cg.home.arpa"'
+            }
+        }
+        stage("Goodbye") {
+            steps {
+                echo "Goodbye from pipeline ${name}"
+            }
+        }
     }
 }
