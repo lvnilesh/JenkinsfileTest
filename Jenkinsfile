@@ -1,49 +1,96 @@
 #!groovy
 
-/*
-The MIT License
-
-Copyright (c) 2015-, CloudBees, Inc., and a number of other of contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-*/
-
 pipeline {
-    agent any
-		    stage('Checkout') {
-					  steps {
-          		checkout scm
-						}
-       	}
-        stage("Hello") {
-            steps {
-                echo "Hello from pipeline ${name}"
-            }
+  agent any
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Dependecies') {
+      steps {
+        sh '/usr/local/bin/pod install'
+      }
+    }
+
+    stage('Running Tests') {
+      steps {
+        parallel (
+          "Unit Tests": {
+            sh 'echo "Unit Tests"'
+            sh 'fastlane scan'
+          },
+          "UI Automation": {
+            sh 'echo "UI Automation"'
+          }
+        )
+      }
+    }
+
+    stage('Documentation') {
+      when {
+        expression {
+          env.BRANCH_NAME == 'develop'
         }
-				stage('Build') {
-            steps {
-                sh 'echo "Building on DockerHost.cg.home.arpa"'
-            }
-        }
-        stage("Goodbye") {
-            steps {
-                echo "Goodbye from pipeline ${name}"
-            }
-        }
+      }
+      steps {
+        // Generating docs
+        sh 'jazzy'
+        // Removing current version from web server
+        sh 'rm -rf /path/to/doc/ios'
+        // Copy new docs to web server
+        sh 'cp -a docs/source/. /path/to/doc/ios'
+      }
+    }
+  }
+
+  post {
+    always {
+      // Processing test results
+      junit 'fastlane/test_output/report.junit'
+      // Cleanup
+      sh 'rm -rf build'
+    }
+    success {
+      notifyBuild()
+    }
+    failure {
+      notifyBuild('ERROR')
+    }
+  }
+}
+
+// Slack notification with status and code changes from git
+def notifyBuild(String buildStatus = 'SUCCESSFUL') {
+  buildStatus = buildStatus
+
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+  def changeSet = getChangeSet()
+  def message = "${subject} \n ${changeSet}"
+
+  if (buildStatus == 'SUCCESSFUL') {
+    color = 'GREEN'
+    colorCode = '#00FF00'
+  } else {
+    color = 'RED'
+    colorCode = '#FF0000'
+  }
+
+  slackSend (color: colorCode, message: message)
+}
+
+@NonCPS
+
+// Fetching change set from Git
+def getChangeSet() {
+  return currentBuild.changeSets.collect { cs ->
+    cs.collect { entry ->
+        "* ${entry.author.fullName}: ${entry.msg}"
+    }.join("\n")
+  }.join("\n")
 }
