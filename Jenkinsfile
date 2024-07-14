@@ -20,7 +20,7 @@ pipeline {
   post {
     always {
       // Processing test results
-      junit 'fastlane/test_output/report.junit'
+      // junit 'fastlane/test_output/report.junit'
       // Cleanup
       sh 'rm -rf build'
     }
